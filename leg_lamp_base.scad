@@ -1,14 +1,16 @@
 $fn=600;
 
+
+
 epsilon=0.0001;
-in_leg_hole_d = 20.8;
+in_leg_hole_d = 20.6;
 plug_top_d = 40-0.6;
-plug_top_extra_length = 3;
+plug_top_extra_length = 1;
 plug_cylinder_base_h = 2;
 plug_cylinder_top_h = 16;
 leg_base_depth=90;
 
-lamp_base_d=12.2;
+lamp_base_d=12.5;
 lamp_base_h=25.3;
 
 leg_plug_width = 5.5;
@@ -24,21 +26,47 @@ module leg_plug_notch() {
     cube([leg_plug_width, 2*leg_plug_depth, leg_plug_h]);
 }
 
+module plug_top_cylinder_shape() {
+	union()
+	{
+	    cylinder(plug_cylinder_top_h, d=plug_top_d);
+	        
+	    translate([ 0, plug_top_d/2, 0])
+	    rotate([0, 0, 270])
+	    cube([plug_top_d, plug_top_extra_length, plug_cylinder_top_h]);
+	    
+	    translate([ plug_top_extra_length, 0, 0])
+	    cylinder(plug_cylinder_top_h, d=plug_top_d);
+    }
+}
+
 module plug_top_base_shape() {
-    union()
+    // remove a bit of plastic to match internal structure of the arm
+    remove_lip_h = 1;
+    remove_lip_w = 2;
+    
+    difference()
     {
-        cylinder(plug_cylinder_top_h, d=plug_top_d);
+        union()
+        {
+            plug_top_cylinder_shape();
+            translate([ plug_top_extra_length + plug_top_d/2, 0, plug_cylinder_top_h/2])
+            rotate([0, 0, -90])
+                leg_plug_notch();
+        }
         
-        translate([ 0, plug_top_d/2, 0])
-        rotate([0, 0, 270])
-        cube([plug_top_d, plug_top_extra_length, plug_cylinder_top_h]);
-        
-        translate([ plug_top_extra_length, 0, 0])
-        cylinder(plug_cylinder_top_h, d=plug_top_d);
-        
-        translate([ plug_top_extra_length + plug_top_d/2, 0, 0])
-        rotate([0, 0, -90])
-            leg_plug_notch();
+        translate([0,0,-epsilon])
+        linear_extrude(height=remove_lip_h+epsilon)
+        difference()
+        {
+            offset(r=300)
+            projection(cut=true)
+                plug_top_cylinder_shape();
+            
+            offset(r=-remove_lip_w)
+            projection(cut=true)
+                plug_top_cylinder_shape();
+        }
     }
 }
 
@@ -77,7 +105,7 @@ module orig_leg_plug_top() {
     }
 }
 
-landing_pad_z = plug_cylinder_top_h*0.75;
+landing_pad_z = plug_cylinder_top_h*0.78;
 
 module orig_leg_plug() {
     union()
