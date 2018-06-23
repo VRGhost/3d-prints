@@ -1,36 +1,44 @@
 $fn=600;
 
 epsilon=0.0001;
-in_leg_hole_d = 21;
+in_leg_hole_d = 20.8;
 plug_top_d = 40-0.6;
+plug_top_extra_length = 3;
 plug_cylinder_base_h = 2;
 plug_cylinder_top_h = 16;
 leg_base_depth=90;
 
-lamp_base_d=12;
+lamp_base_d=12.2;
 lamp_base_h=25.3;
 
-leg_plug_width = 5.4;
+leg_plug_width = 5.5;
 leg_plug_depth = 3;
 leg_plug_notch_d = 2*0.75;
 
 // Gentle top cap curve
-leg_plug_raise_h = 4;
+leg_plug_raise_h = 3;
 
 module leg_plug_notch() {
     leg_plug_h = 2*plug_cylinder_top_h;
-    
-    translate([-leg_plug_width/2, 0, -plug_cylinder_top_h/2])
-    difference()
+    translate([-leg_plug_width/2, -leg_plug_depth, -plug_cylinder_top_h/2])
+    cube([leg_plug_width, 2*leg_plug_depth, leg_plug_h]);
+}
+
+module plug_top_base_shape() {
+    union()
     {
-        translate([0,-leg_plug_depth,0])
-        cube([leg_plug_width, 2*leg_plug_depth, leg_plug_h]);
+        cylinder(plug_cylinder_top_h, d=plug_top_d);
         
-        translate([0, 0, -epsilon])
-        cylinder(d=leg_plug_notch_d, h=leg_plug_h + 2*epsilon);
+        translate([ 0, plug_top_d/2, 0])
+        rotate([0, 0, 270])
+        cube([plug_top_d, plug_top_extra_length, plug_cylinder_top_h]);
         
-        translate([leg_plug_width, 0, -epsilon])
-        cylinder(d=leg_plug_notch_d, h=leg_plug_h + 2*epsilon);
+        translate([ plug_top_extra_length, 0, 0])
+        cylinder(plug_cylinder_top_h, d=plug_top_d);
+        
+        translate([ plug_top_extra_length + plug_top_d/2, 0, 0])
+        rotate([0, 0, -90])
+            leg_plug_notch();
     }
 }
 
@@ -39,10 +47,10 @@ module orig_leg_plug_top() {
     in_leg_plug_r = plug_top_d/2;
     triangle_angle = atan(
         (plug_cylinder_top_h - plug_cylinder_base_h) /
-        plug_top_d
+        (plug_top_d + plug_top_extra_length)
     );
     
-    triangle_extra_length = 17;
+    triangle_extra_length = 17 + plug_top_extra_length;
     
     intersection()
     {
@@ -57,14 +65,8 @@ module orig_leg_plug_top() {
                 [in_leg_plug_r + triangle_extra_length, 0]
             ]);
         
-        union()
-        {
-            cylinder(plug_cylinder_top_h, d=plug_top_d);
-            translate([ plug_top_d/2, 0, 0])
-            rotate([0, 0, -90])
-                leg_plug_notch();
-        }
-     
+        
+        plug_top_base_shape();
         
         raise_r = leg_plug_raise_h / 2 + pow(plug_top_d, 2) / ( 8 * leg_plug_raise_h );
         
@@ -75,7 +77,7 @@ module orig_leg_plug_top() {
     }
 }
 
-landing_pad_z = plug_cylinder_top_h*0.73;
+landing_pad_z = plug_cylinder_top_h*0.75;
 
 module orig_leg_plug() {
     union()
