@@ -5,7 +5,7 @@ $fn=600;
 epsilon=0.0001;
 in_leg_hole_d = 20.6;
 plug_top_d = 40-0.6;
-plug_top_extra_length = 1;
+plug_top_extra_length = 2;
 plug_cylinder_base_h = 2;
 plug_cylinder_top_h = 16;
 leg_base_depth=90;
@@ -22,21 +22,37 @@ leg_plug_raise_h = 3;
 
 module leg_plug_notch() {
     leg_plug_h = 2*plug_cylinder_top_h;
-    translate([-leg_plug_width/2, -leg_plug_depth, -plug_cylinder_top_h/2])
-    cube([leg_plug_width, 2*leg_plug_depth, leg_plug_h]);
+    translate([-leg_plug_width/2, -leg_plug_depth, 0])
+    hull()
+    {
+        translate([0, 0, plug_cylinder_top_h+3])
+        cube([leg_plug_width, 2*leg_plug_depth, epsilon]);
+        
+        cube([leg_plug_width, leg_plug_depth/2, epsilon]);
+    }
 }
 
-module plug_top_cylinder_shape() {
-	union()
-	{
-	    cylinder(plug_cylinder_top_h, d=plug_top_d);
-	        
-	    translate([ 0, plug_top_d/2, 0])
-	    rotate([0, 0, 270])
-	    cube([plug_top_d, plug_top_extra_length, plug_cylinder_top_h]);
-	    
+module plug_top_2d_shape() {
+	hull()
+    {
+        circle(d=plug_top_d);	    
 	    translate([ plug_top_extra_length, 0, 0])
-	    cylinder(plug_cylinder_top_h, d=plug_top_d);
+	    circle(d=plug_top_d);
+    }
+}
+
+module plug_bottom_2d_shape() {
+    circle(d=plug_top_d);
+}
+
+module plug_3d_shape() {
+    hull()
+    {
+        translate([0, 0, plug_cylinder_top_h-epsilon])
+            linear_extrude(epsilon) plug_top_2d_shape();
+        
+        linear_extrude(epsilon)
+            plug_bottom_2d_shape();
     }
 }
 
@@ -49,8 +65,8 @@ module plug_top_base_shape() {
     {
         union()
         {
-            plug_top_cylinder_shape();
-            translate([ plug_top_extra_length + plug_top_d/2, 0, plug_cylinder_top_h/2])
+            plug_3d_shape();
+            translate([ plug_top_extra_length + plug_top_d/2, 0, 0])
             rotate([0, 0, -90])
                 leg_plug_notch();
         }
@@ -60,12 +76,10 @@ module plug_top_base_shape() {
         difference()
         {
             offset(r=300)
-            projection(cut=true)
-                plug_top_cylinder_shape();
+            plug_bottom_2d_shape();
             
             offset(r=-remove_lip_w)
-            projection(cut=true)
-                plug_top_cylinder_shape();
+            plug_bottom_2d_shape();
         }
     }
 }
@@ -114,7 +128,7 @@ module orig_leg_plug() {
         // The shaft
         shaft_h = min(
             leg_base_depth,
-            (lamp_base_h - landing_pad_z) * 1.1
+            (lamp_base_h - landing_pad_z) * 1.5
         );
         
         translate([0,0,-shaft_h])
